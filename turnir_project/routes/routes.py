@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, flash, request, jsonify, redirect, url_for
+from sqlalchemy import desc
 from ..models.models import ParticipantsDB, FightsDB
 from ..extensions import db
 import csv
@@ -25,7 +26,10 @@ def fill_fighters():
           db.session.rollback()
   return "результат импорта - в принт"
 
-def create_fight(round_no):
+
+@home.route('/competition/<int:round_no>')
+def competition_view(round_no):
+  participants_data = ParticipantsDB.query.filter_by(activity_status=1).all()
   round_number = round_no
 
   # Список id активных бойцов
@@ -33,10 +37,10 @@ def create_fight(round_no):
   active_fighters_id_list = [value for value, in active_fighters_id_data]
  
   # Список красных бойцов, которые уже есть в текущем раунде
-  red_fighters_fights_data = db.session.query(FightsDB.red_fighter_id).filter_by(round_number=round_number).all()
+  red_fighters_fights_data = db.session.query(FightsDB.red_fighter_id).filter_by(round_number=round_no).all()
   red_fighters_id_list = [value for value, in red_fighters_fights_data]
   # Список синих бойцов, которые уже есть в текущем раунде
-  blue_fighters_fights_data = db.session.query(FightsDB.blue_fighter_id).filter_by(round_number=round_number).all()
+  blue_fighters_fights_data = db.session.query(FightsDB.blue_fighter_id).filter_by(round_number=round_no).all()
   blue_fighters_id_list = [value for value, in blue_fighters_fights_data]
   # список всех бойцов, которые уже есть в текущем раунде
   fighters_id_list = red_fighters_id_list + blue_fighters_id_list
@@ -50,17 +54,16 @@ def create_fight(round_no):
     db.session.add(new_fight)
     try:
       db.session.commit()
+      
       print("создан новый бой в круге №", round_number, ". id бойцов:", red_fighter_id, " и ", blue_fighter_id)  
     except Exception as e:
       print("не получилось создать новый бой. Ошибка:  ", e)
       db.session.rollback()
-
-
-@home.route('/competition/<int:round_no>')
-def competition_view(round_no):
-  participants_data = ParticipantsDB.query.filter_by(activity_status=1).all()
-  current_round_no = round_no
-  create_fight(current_round_no)
-  
+  else:
+    round_number = round_number + 1
+  last_created_fight = FightsDB.query.order_by(desc(FightsDB.fight_id)).first()
+ 
+  print(last_created_fight)
+  print("round_number is ", round_number)
   # print(participants_data[0].participant_first_name)
-  return render_template("competition.html", round_no = round_no)
+  return render_template("competition.html", fight_data = last_created_fight)
