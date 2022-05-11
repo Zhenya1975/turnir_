@@ -14,3 +14,4 @@ class FightsDB(db.Model):
   round_number = db.Column(db.Integer)
   red_fighter_id = db.Column(db.Integer, db.ForeignKey('participantsDB.participant_id'))
   blue_fighter_id = db.Column(db.Integer, db.ForeignKey('participantsDB.participant_id'))
+  fight_winner_id = db.Column(db.Integer, default = 0)

@@ -31,10 +31,29 @@ def create_fight(round_no):
   # Список id активных бойцов
   active_fighters_id_data = db.session.query(ParticipantsDB.participant_id).filter_by(activity_status=1).all()
   active_fighters_id_list = [value for value, in active_fighters_id_data]
-  print("active_fighters_ids: ", active_fighters_id_list)
-  # Список бойцов, которые уже есть в текущем раунде
-
-
+ 
+  # Список красных бойцов, которые уже есть в текущем раунде
+  red_fighters_fights_data = db.session.query(FightsDB.red_fighter_id).filter_by(round_number=round_number).all()
+  red_fighters_id_list = [value for value, in red_fighters_fights_data]
+  # Список синих бойцов, которые уже есть в текущем раунде
+  blue_fighters_fights_data = db.session.query(FightsDB.blue_fighter_id).filter_by(round_number=round_number).all()
+  blue_fighters_id_list = [value for value, in blue_fighters_fights_data]
+  # список всех бойцов, которые уже есть в текущем раунде
+  fighters_id_list = red_fighters_id_list + blue_fighters_id_list
+  # список бойцов, которые активны, но еще не в текущем раунде
+  free_fighters_list = list(set(active_fighters_id_list) - set(fighters_id_list))
+  # если количество свободных бойцов больше одного, то берем первых двух из списка и добавляем их в красного и синего
+  if len(free_fighters_list)>1:
+    red_fighter_id = free_fighters_list[0]
+    blue_fighter_id = free_fighters_list[1]
+    new_fight = FightsDB(round_number = round_number, red_fighter_id = red_fighter_id, blue_fighter_id = blue_fighter_id)
+    db.session.add(new_fight)
+    try:
+      db.session.commit()
+      print("создан новый бой в круге №", round_number, ". id бойцов:", red_fighter_id, " и ", blue_fighter_id)  
+    except Exception as e:
+      print("не получилось создать новый бой. Ошибка:  ", e)
+      db.session.rollback()
 
 
 @home.route('/competition/<int:round_no>')
